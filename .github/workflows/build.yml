@@ -25,14 +25,18 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
 
-      - name: Recreate Android Project files (Embedding V2)
-        run: flutter create . --platforms=android
-
-      - name: Install Dependencies
-        run: flutter pub get
-
-      - name: Build APK
-        run: flutter build apk --release
+      - name: Build Project
+        run: |
+          cd ..
+          flutter create --platforms=android --project-name=color_cash_crush app_runner
+          cp -r color-cash-crush/lib app_runner/
+          cp -r color-cash-crush/pubspec.yaml app_runner/
+          cd app_runner
+          sed -i 's/name: .*/name: color_cash_crush/' pubspec.yaml
+          flutter pub get
+          flutter build apk --release
+          mkdir -p $GITHUB_WORKSPACE/build/app/outputs/flutter-apk
+          cp build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/build/app/outputs/flutter-apk/
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
