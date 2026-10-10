@@ -33,6 +33,17 @@ jobs:
           cp -r color-cash-crush/pubspec.yaml app_runner/
           cd app_runner
           sed -i 's/name: .*/name: color_cash_crush/' pubspec.yaml
+
+          # تحديث إصدار Kotlin الشامل لجميع صيغ Gradle
+          if [ -f "android/settings.gradle" ]; then
+            sed -i 's/org.jetbrains.kotlin.android" version "[^"]*"/org.jetbrains.kotlin.android" version "1.9.24"/' android/settings.gradle
+            sed -i "s/org.jetbrains.kotlin.android' version '[^']*'/org.jetbrains.kotlin.android' version '1.9.24'/" android/settings.gradle
+          fi
+
+          if [ -f "android/build.gradle" ]; then
+            sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/" android/build.gradle
+          fi
+
           flutter pub get
           flutter build apk --release
           mkdir -p $GITHUB_WORKSPACE/build/app/outputs/flutter-apk
