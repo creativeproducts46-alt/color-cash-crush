@@ -34,18 +34,60 @@ jobs:
           cd app_runner
           sed -i 's/name: .*/name: color_cash_crush/' pubspec.yaml
 
-          # تحديث إصدار Kotlin الشامل لجميع صيغ Gradle
-          if [ -f "android/settings.gradle" ]; then
-            sed -i 's/org.jetbrains.kotlin.android" version "[^"]*"/org.jetbrains.kotlin.android" version "1.9.24"/' android/settings.gradle
-            sed -i "s/org.jetbrains.kotlin.android' version '[^']*'/org.jetbrains.kotlin.android' version '1.9.24'/" android/settings.gradle
-          fi
+          # ضبط ملف settings.gradle لتعيين إصدار Kotlin الحديث مباشرة
+          cat << 'EOF' > android/settings.gradle
+          pluginManagement {
+              def flutterSdkPath = {
+                  def properties = new Properties()
+                  file("local.properties").withInputStream { properties.load(it) }
+                  def flutterSdkPath = properties.getProperty("flutter.sdk")
+                  assert flutterSdkPath != null : "flutter.sdk not set in local.properties"
+                  return flutterSdkPath
+              }()
 
-          if [ -f "android/build.gradle" ]; then
-            sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/" android/build.gradle
-          fi
+              includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+
+          plugins {
+              id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+              id "com.android.application" version "8.3.0" apply false
+              id "org.jetbrains.kotlin.android" version "1.9.24" apply false
+          }
+
+          include ":app"
+          EOF
+
+          # ضبط build.gradle الرئيسي
+          cat << 'EOF' > android/build.gradle
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+
+          rootProject.buildDir = "../build"
+          subprojects {
+              project.buildDir = "${rootProject.buildDir}/${project.name}"
+          }
+          subprojects {
+              project.evaluationDependsOn(":app")
+          }
+
+          tasks.register("clean", Delete) {
+              delete rootProject.buildDir
+          }
+          EOF
 
           flutter pub get
           flutter build apk --release
+
           mkdir -p $GITHUB_WORKSPACE/build/app/outputs/flutter-apk
           cp build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/build/app/outputs/flutter-apk/
 
