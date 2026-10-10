@@ -34,7 +34,11 @@ jobs:
           cd app_runner
           sed -i 's/name: .*/name: color_cash_crush/' pubspec.yaml
 
-          # ضبط ملف settings.gradle لتعيين إصدار Kotlin الحديث مباشرة
+          # تحديث رابط Gradle إلى 8.4 المطلوب
+          sed -i 's/gradle-.*-all.zip/gradle-8.4-all.zip/' android/gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/gradle-.*-bin.zip/gradle-8.4-all.zip/' android/gradle/wrapper/gradle-wrapper.properties
+
+          # إعداد settings.gradle متوافق مع Gradle 8.4 و Kotlin 1.9.24
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
@@ -61,28 +65,6 @@ jobs:
           }
 
           include ":app"
-          EOF
-
-          # ضبط build.gradle الرئيسي
-          cat << 'EOF' > android/build.gradle
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-
-          rootProject.buildDir = "../build"
-          subprojects {
-              project.buildDir = "${rootProject.buildDir}/${project.name}"
-          }
-          subprojects {
-              project.evaluationDependsOn(":app")
-          }
-
-          tasks.register("clean", Delete) {
-              delete rootProject.buildDir
-          }
           EOF
 
           flutter pub get
